@@ -6,9 +6,9 @@ from typing import List
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -102,12 +102,21 @@ def generate_launch_description() -> LaunchDescription:
             ],
         ),
         # Scene publisher (adds Gazebo objects to MoveIt planning scene)
-        Node(
-            package="panda_moveit_config",
-            executable="scene_publisher.py",
-            name="scene_publisher",
+        ExecuteProcess(
+            cmd=[
+                FindExecutable(name="python3"),
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("panda_moveit_config"),
+                        "scripts",
+                        "scene_publisher.py",
+                    ]
+                ),
+                "--ros-args",
+                "--log-level",
+                log_level,
+            ],
             output="screen",
-            parameters=[{"use_sim_time": use_sim_time}],
         ),
     ]
 
@@ -181,3 +190,4 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             description="The level of logging that is applied to all ROS 2 nodes launched by this script.",
         ),
     ]
+

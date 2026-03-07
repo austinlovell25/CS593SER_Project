@@ -27,10 +27,11 @@ RUN apt-get update && \
     tmux \
     libpcl-dev \
     libopencv-dev \
-    libeigen3-dev && \
+    libeigen3-dev \
     tigervnc-standalone-server \
     tigervnc-tools \
     openbox \
+    vim \ 
     xterm && \
     rm -rf /var/lib/apt/lists/*
 
@@ -58,11 +59,6 @@ RUN rosdep update && \
     source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
     colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release" && \
     rm -rf ${WS_LOG_DIR}
-
-### Pre-configure GPD so students can build with one command
-RUN cmake -S ${WS_SRC_DIR}/panda_gz_moveit2/deps/gpd \
-          -B ${WS_SRC_DIR}/panda_gz_moveit2/deps/gpd/build \
-          -DCMAKE_BUILD_TYPE=Release
 
 ### Add workspace to the ROS entrypoint
 ### Source ROS workspace inside `~/.bashrc` to enable autocompletion

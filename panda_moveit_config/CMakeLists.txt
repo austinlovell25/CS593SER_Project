@@ -7,7 +7,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(panda_description REQUIRED)
 
 # Install directories
-install(DIRECTORY config launch rviz srdf DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config launch rviz srdf scripts DESTINATION share/${PROJECT_NAME})
 
 # Install Python scripts
 install(PROGRAMS
@@ -21,3 +21,4 @@ install(PROGRAMS
 
 # Setup the project
 ament_package()
+
