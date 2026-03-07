@@ -1,0 +1,22 @@
+# ros_gz_bridge configuration for bridging Gazebo topics to ROS 2
+
+# Bridge dynamic pose updates (only publishes when poses change)
+- ros_topic_name: /gz_pose
+  gz_topic_name: /world/tabletop_world/dynamic_pose/info
+  ros_type_name: tf2_msgs/msg/TFMessage
+  gz_type_name: gz.msgs.Pose_V
+  direction: GZ_TO_ROS
+
+# Fallback: static pose publisher
+- ros_topic_name: /gz_tf
+  gz_topic_name: /world/tabletop_world/pose/info
+  ros_type_name: tf2_msgs/msg/TFMessage
+  gz_type_name: gz.msgs.Pose_V
+  direction: GZ_TO_ROS
+
+
+- ros_topic_name: /point_cloud
+  gz_topic_name: /overhead_camera/points
+  ros_type_name: sensor_msgs/msg/PointCloud2
+  gz_type_name: gz.msgs.PointCloudPacked
+  direction: GZ_TO_ROS
