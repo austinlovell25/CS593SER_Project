@@ -107,6 +107,126 @@
     />
   </xacro:if>
 
+  <!-- ===== Static environment for open-loop chess ===== -->
+  <!-- Matches panda_description/worlds/tabletop_chess.sdf exactly -->
+  <link name="table_link">
+    <!-- Table top -->
+    <visual>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.8 1.0 0.04"/>
+      </geometry>
+      <material name="table_top_mat">
+        <color rgba="0.6 0.4 0.2 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.8 1.0 0.04"/>
+      </geometry>
+    </collision>
+
+    <!-- Leg 1 -->
+    <visual>
+      <origin xyz="0.35 0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+      <material name="table_leg_mat">
+        <color rgba="0.5 0.3 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.35 0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+    </collision>
+
+    <!-- Leg 2 -->
+    <visual>
+      <origin xyz="0.35 -0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+      <material name="table_leg_mat_2">
+        <color rgba="0.5 0.3 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.35 -0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+    </collision>
+
+    <!-- Leg 3 -->
+    <visual>
+      <origin xyz="-0.35 0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+      <material name="table_leg_mat_3">
+        <color rgba="0.5 0.3 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.35 0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+    </collision>
+
+    <!-- Leg 4 -->
+    <visual>
+      <origin xyz="-0.35 -0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+      <material name="table_leg_mat_4">
+        <color rgba="0.5 0.3 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.35 -0.45 0.115" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.23"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="world_to_table_joint" type="fixed">
+    <parent link="world"/>
+    <child link="table_link"/>
+    <origin xyz="0.6 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="chessboard_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.70 0.70 0.01"/>
+      </geometry>
+      <material name="chessboard_mat">
+        <color rgba="0.2 0.2 0.2 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.70 0.70 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="table_to_chessboard_joint" type="fixed">
+    <parent link="table_link"/>
+    <child link="chessboard_link"/>
+    <origin xyz="0 0 0.272" rpy="0 0 1.5708"/>
+  </joint>
+
+
   <!-- Gazebo - ROS 2 control -->
   <xacro:if value="$(arg ros2_control)">
     <xacro:if value="${'gz' in '$(arg ros2_control_plugin)'}">

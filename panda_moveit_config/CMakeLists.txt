@@ -13,7 +13,6 @@ install(DIRECTORY config launch rviz srdf scripts DESTINATION share/${PROJECT_NA
 install(PROGRAMS
   scripts/scene_publisher.py
   scripts/move_object.py
-  scripts/object_detector.py
   scripts/grasp_planner.py
   scripts/grasp_planner_gpd.py
   DESTINATION lib/${PROJECT_NAME}

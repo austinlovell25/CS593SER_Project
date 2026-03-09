@@ -518,7 +518,7 @@
     </include>
 
     <!-- RGBD Camera -->
-    <model name="overhead_camera">
+    <!-- <model name="overhead_camera">
       <plugin
         filename="gz-sim-sensors-system"
         name="gz::sim::systems::Sensors">
@@ -563,7 +563,7 @@
           <gz_frame_id>overhead_camera_link</gz_frame_id>
         </sensor>
       </link>
-    </model>
+    </model> -->
   </world>
 </sdf>
 
