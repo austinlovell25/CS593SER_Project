@@ -25,14 +25,17 @@ RUN apt-get update && \
     libvulkan1 \
     mesa-vulkan-drivers \
     tmux \
+    python3-pip \
+    stockfish \
     libpcl-dev \
     libopencv-dev \
     libeigen3-dev \
     tigervnc-standalone-server \
     tigervnc-tools \
     openbox \
-    vim \ 
+    vim \
     xterm && \
+    python3 -m pip install --no-cache-dir --break-system-packages chess && \
     rm -rf /var/lib/apt/lists/*
 
 ### NVIDIA environment variables for graphics
