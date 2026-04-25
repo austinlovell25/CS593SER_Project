@@ -225,7 +225,7 @@
       <pose>0.6 0 0 0 0 0</pose>
       <!-- Table top -->
       <link name="table_top">
-        <pose>0 0 0.25 0 0 0</pose>
+        <pose>0 0 0.16 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
@@ -248,18 +248,18 @@
       </link>
       <!-- Table legs -->
       <link name="leg1">
-        <pose>0.35 0.45 0.115 0 0 0</pose>
+        <pose>0.35 0.45 0.07 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
           <material>
@@ -269,18 +269,18 @@
         </visual>
       </link>
       <link name="leg2">
-        <pose>0.35 -0.45 0.115 0 0 0</pose>
+        <pose>0.35 -0.45 0.07 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
           <material>
@@ -290,18 +290,18 @@
         </visual>
       </link>
       <link name="leg3">
-        <pose>-0.35 0.45 0.115 0 0 0</pose>
+        <pose>-0.35 0.45 0.07 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
           <material>
@@ -311,18 +311,18 @@
         </visual>
       </link>
       <link name="leg4">
-        <pose>-0.35 -0.45 0.115 0 0 0</pose>
+        <pose>-0.35 -0.45 0.07 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.04 0.04 0.23</size>
+              <size>0.04 0.04 0.14</size>
             </box>
           </geometry>
           <material>
@@ -353,168 +353,168 @@
     <include>
       <name>chessboard</name>
       <uri>model://chessboard</uri>
-      <pose>0.6 0.0 0.272 0 0 1.5708</pose>
+      <pose>0.6 0.0 0.182 0 0 1.5708</pose>
       <static>true</static>
     </include>
     <include>
       <name>piece11</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 -0.266 0.294 0 0 0</pose>
+      <pose>0.335 -0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece12</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 -0.190 0.294 0 0 0</pose>
+      <pose>0.335 -0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece13</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 -0.114 0.294 0 0 0</pose>
+      <pose>0.335 -0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece14</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 -0.038 0.294 0 0 0</pose>
+      <pose>0.335 -0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece15</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 0.038 0.294 0 0 0</pose>
+      <pose>0.335 0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece16</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 0.114 0.294 0 0 0</pose>
+      <pose>0.335 0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece17</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 0.190 0.294 0 0 0</pose>
+      <pose>0.335 0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece18</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.335 0.266 0.294 0 0 0</pose>
+      <pose>0.335 0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece21</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 -0.266 0.294 0 0 0</pose>
+      <pose>0.411 -0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece22</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 -0.190 0.294 0 0 0</pose>
+      <pose>0.411 -0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece23</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 -0.114 0.294 0 0 0</pose>
+      <pose>0.411 -0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece24</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 -0.038 0.294 0 0 0</pose>
+      <pose>0.411 -0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece25</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 0.038 0.294 0 0 0</pose>
+      <pose>0.411 0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece26</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 0.114 0.294 0 0 0</pose>
+      <pose>0.411 0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece27</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 0.190 0.294 0 0 0</pose>
+      <pose>0.411 0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece28</name>
       <uri>model://chess_piece_white</uri>
-      <pose>0.411 0.266 0.294 0 0 0</pose>
+      <pose>0.411 0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece71</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 -0.266 0.294 0 0 0</pose>
+      <pose>0.791 -0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece72</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 -0.190 0.294 0 0 0</pose>
+      <pose>0.791 -0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece73</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 -0.114 0.294 0 0 0</pose>
+      <pose>0.791 -0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece74</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 -0.038 0.294 0 0 0</pose>
+      <pose>0.791 -0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece75</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 0.038 0.294 0 0 0</pose>
+      <pose>0.791 0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece76</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 0.114 0.294 0 0 0</pose>
+      <pose>0.791 0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece77</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 0.190 0.294 0 0 0</pose>
+      <pose>0.791 0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece78</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.791 0.266 0.294 0 0 0</pose>
+      <pose>0.791 0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece81</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 -0.266 0.294 0 0 0</pose>
+      <pose>0.867 -0.266 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece82</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 -0.190 0.294 0 0 0</pose>
+      <pose>0.867 -0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece83</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 -0.114 0.294 0 0 0</pose>
+      <pose>0.867 -0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece84</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 -0.038 0.294 0 0 0</pose>
+      <pose>0.867 -0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece85</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 0.038 0.294 0 0 0</pose>
+      <pose>0.867 0.038 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece86</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 0.114 0.294 0 0 0</pose>
+      <pose>0.867 0.114 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece87</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 0.190 0.294 0 0 0</pose>
+      <pose>0.867 0.190 0.209 0 0 0</pose>
     </include>
     <include>
       <name>piece88</name>
       <uri>model://chess_piece_black</uri>
-      <pose>0.867 0.266 0.294 0 0 0</pose>
+      <pose>0.867 0.266 0.209 0 0 0</pose>
     </include>
 
     <!-- RGBD Camera -->
