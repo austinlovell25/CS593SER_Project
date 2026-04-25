@@ -11,7 +11,7 @@ install(DIRECTORY config launch rviz srdf scripts DESTINATION share/${PROJECT_NA
 
 # Install Python scripts
 install(PROGRAMS
-  scripts/scene_publisher.py
+  scripts/chess_sequence.py
   scripts/move_object.py
   scripts/grasp_planner.py
   scripts/grasp_planner_gpd.py
