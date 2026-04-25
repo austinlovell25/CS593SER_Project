@@ -4,7 +4,7 @@
     <static>false</static>
     <link name="piece_link">
       <inertial>
-        <mass>0.05</mass>
+        <mass>0.08</mass>
         <inertia>
           <ixx>1.0e-5</ixx>
           <ixy>0.0</ixy>
@@ -17,7 +17,7 @@
       <visual name="visual">
         <geometry>
           <box>
-            <size>0.015 0.015 0.04</size>
+            <size>0.02 0.02 0.05</size>
           </box>
         </geometry>
         <material>
@@ -29,7 +29,7 @@
       <collision name="collision">
         <geometry>
           <box>
-            <size>0.01 0.01 0.04</size>
+            <size>0.014 0.014 0.05</size>
           </box>
         </geometry>
         <surface>

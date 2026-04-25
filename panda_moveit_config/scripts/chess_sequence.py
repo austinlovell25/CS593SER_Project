@@ -350,7 +350,7 @@ def square_pose(square: chess.Square) -> BoardPose:
     return BoardPose(
         x=0.335 + spacing * chess.square_rank(square),
         y=-0.266 + spacing * chess.square_file(square),
-        z=0.294,
+        z=0.209,
     )
 
 
