@@ -4,7 +4,7 @@
     <static>false</static>
     <link name="piece_link">
       <inertial>
-        <mass>0.08</mass>
+        <mass>0.02</mass>
         <inertia>
           <ixx>1.0e-5</ixx>
           <ixy>0.0</ixy>
@@ -35,10 +35,18 @@
         <surface>
           <friction>
             <ode>
-              <mu>1.0</mu>
-              <mu2>1.0</mu2>
+              <mu>5.0</mu>
+              <mu2>5.0</mu2>
             </ode>
           </friction>
+          <contact>
+            <ode>
+              <kp>200000.0</kp>
+              <kd>20.0</kd>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
         </surface>
       </collision>
     </link>
