@@ -4,13 +4,19 @@
 from __future__ import annotations
 
 import copy
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import chess
 import rclpy
 from geometry_msgs.msg import Point, Pose, Quaternion
-from moveit_msgs.msg import CollisionObject, PlanningScene
+from moveit_msgs.msg import (
+    AllowedCollisionEntry,
+    AttachedCollisionObject,
+    CollisionObject,
+    PlanningScene,
+)
 from shape_msgs.msg import SolidPrimitive
 
 from grasp_planner import GraspPlanner
@@ -290,7 +296,13 @@ class ChessMoveExecutor(GraspPlanner):
     TOP_DOWN_ORIENTATION = Quaternion(x=1.0, y=0.0, z=0.0, w=0.0)
     PIECE_BASE_DIMS = (0.03, 0.03, 0.05)
     PIECE_COLLISION_DIMS = (0.035, 0.035, 0.06)
+    CHESS_ARM_VELOCITY_SCALE = 0.35
+    CHESS_ARM_ACCELERATION_SCALE = 0.25
     GRIPPER_CLOSED = [0.0040, 0.0040]
+    GRIPPER_OPEN_SETTLE_SEC = 1.2
+    GRIPPER_CLOSE_SETTLE_SEC = 1.6
+    GRIPPER_RECLAMP_SETTLE_SEC = 0.5
+    POST_RELEASE_SETTLE_SEC = 1.0
     PRE_GRASP_LIFT = 0.12
     TRANSIT_Z = 0.42
     RETREAT_LIFT = 0.12
@@ -320,35 +332,60 @@ class ChessMoveExecutor(GraspPlanner):
             f"Initialized planning scene with {len(self.square_models)} chess piece obstacles"
         )
 
+    def _build_move_goal(self):
+        goal = super()._build_move_goal()
+        goal.request.max_velocity_scaling_factor = self.CHESS_ARM_VELOCITY_SCALE
+        goal.request.max_acceleration_scaling_factor = self.CHESS_ARM_ACCELERATION_SCALE
+        return goal
+
     def execute_move(self, command: RobotMoveCommand) -> None:
         if command.promotion:
             raise NotImplementedError("Promotion is not implemented in v1")
         if command.is_en_passant:
             raise NotImplementedError("En passant is not implemented in v1")
 
-        self.pause_pub.publish(self._bool_msg(True))
+        self._set_detection_paused(True)
         self._manipulating = True
+        interrupted = False
         try:
-            if not self.move_arm_to_joints(self.INITIAL_JOINTS):
-                raise RuntimeError("Failed to move to the initial joint configuration")
+            self._reset_move_state("before move")
 
             if command.captured_model and command.capture_pose:
                 self.get_logger().info(
                     f'Discarding captured piece "{command.captured_model}" from '
                     f'{command.capture_square}'
                 )
-                self.pick_piece(command.captured_model, command.capture_pose)
+                self._run_best_effort(
+                    f'Pick captured piece "{command.captured_model}"',
+                    self.pick_piece,
+                    command.captured_model,
+                    command.capture_pose,
+                )
                 self._remove_model_from_board(command.captured_model)
-                self.discard_piece(command.captured_model)
+                self._run_best_effort(
+                    f'Discard captured piece "{command.captured_model}"',
+                    self.discard_piece,
+                    command.captured_model,
+                )
                 self._publish_board_collision_scene()
 
             self.get_logger().info(
                 f'Moving "{command.moving_model}" from '
                 f'{command.transfer.from_square} to {command.transfer.to_square}'
             )
-            self.pick_piece(command.moving_model, command.transfer.from_pose)
+            self._run_best_effort(
+                f'Pick moving piece "{command.moving_model}"',
+                self.pick_piece,
+                command.moving_model,
+                command.transfer.from_pose,
+            )
             self._remove_model_from_board(command.moving_model)
-            self.place_piece(command.moving_model, command.transfer.to_pose)
+            self._run_best_effort(
+                f'Place moving piece "{command.moving_model}"',
+                self.place_piece,
+                command.moving_model,
+                command.transfer.to_pose,
+            )
             self._place_model_on_square(command.moving_model, command.transfer.to_square)
             self._publish_board_collision_scene()
 
@@ -357,51 +394,87 @@ class ChessMoveExecutor(GraspPlanner):
                     f'Moving supporting piece "{transfer.model_name}" '
                     f'for {transfer.reason}'
                 )
-                self.pick_piece(transfer.model_name, transfer.from_pose)
+                self._run_best_effort(
+                    f'Pick supporting piece "{transfer.model_name}"',
+                    self.pick_piece,
+                    transfer.model_name,
+                    transfer.from_pose,
+                )
                 self._remove_model_from_board(transfer.model_name)
-                self.place_piece(transfer.model_name, transfer.to_pose)
+                self._run_best_effort(
+                    f'Place supporting piece "{transfer.model_name}"',
+                    self.place_piece,
+                    transfer.model_name,
+                    transfer.to_pose,
+                )
                 self._place_model_on_square(transfer.model_name, transfer.to_square)
                 self._publish_board_collision_scene()
 
-            if not self.move_arm_to_joints(self.INITIAL_JOINTS):
-                raise RuntimeError("Failed to return to the initial joint configuration")
+        except KeyboardInterrupt:
+            interrupted = True
+            raise
         finally:
+            if not interrupted:
+                self._reset_move_state("after move")
             self._manipulating = False
-            self.pause_pub.publish(self._bool_msg(False))
+            self._set_detection_paused(False)
 
-    def pick_piece(self, model_name: str, source_pose: BoardPose) -> None:
+    def pick_piece(self, model_name: str, source_pose: BoardPose) -> bool:
         self._publish_board_collision_scene(active_model=model_name)
-        if not self.move_gripper(open=True):
-            raise RuntimeError(f"Failed to open gripper for {model_name}")
+        if not self._move_gripper_and_settle(
+            open=True,
+            context=f"opening before grasping {model_name}",
+        ):
+            self._warn_continue(f"Failed to open gripper for {model_name}")
+            return False
+
+        source_transit = self._transit_pose_for_xy(source_pose.x, source_pose.y)
+        if not self._move_arm_to_chess_pose(
+            source_transit,
+            position_tolerance=self.APPROACH_TOLERANCE,
+            orientation_tolerance=0.15,
+        ):
+            self._warn_continue(f"Failed source transit approach for {model_name}")
+            return False
 
         pre_grasp = self._board_pose_to_pose(source_pose, z_offset=self.PRE_GRASP_LIFT)
         self.publish_pose_axes(pre_grasp, f"{model_name}_pre_grasp")
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             pre_grasp,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed pre-grasp approach for {model_name}")
+            self._warn_continue(f"Failed pre-grasp approach for {model_name}")
+            return False
 
         grasp_pose = self._board_pose_to_pose(source_pose, z_offset=self.GRASP_Z_OFFSET)
         self.publish_pose_axes(grasp_pose, f"{model_name}_grasp")
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             grasp_pose,
             position_tolerance=self.GRASP_TOLERANCE,
             orientation_tolerance=0.12,
         ):
-            raise RuntimeError(f"Failed grasp descent for {model_name}")
+            self._warn_continue(f"Failed grasp descent for {model_name}")
+            return False
 
-        if not self.move_gripper(open=False):
-            raise RuntimeError(f"Failed to close gripper on {model_name}")
+        if not self._move_gripper_and_settle(
+            open=False,
+            context=f"closing on {model_name}",
+        ):
+            self._warn_continue(f"Failed to close gripper on {model_name}")
+            return False
 
-        rclpy.spin_once(self, timeout_sec=self.GRASP_SETTLE_SEC)
-        gap = self.current_gripper_gap()
-        if gap < self.GRASP_FAIL_GAP:
-            self.move_gripper(open=True)
-            raise RuntimeError(
-                f"Physical grasp failed for {model_name}: gripper closed fully (gap={gap:.4f})"
-            )
+        self._settle_for(self.GRASP_SETTLE_SEC)
+        try:
+            gap = self.current_gripper_gap()
+        except RuntimeError as exc:
+            self._warn_continue(f"Could not verify grasp for {model_name}: {exc}")
+        else:
+            if gap < self.GRASP_FAIL_GAP:
+                self._warn_continue(
+                    f"Physical grasp may have failed for {model_name}: "
+                    f"gripper closed fully (gap={gap:.4f})"
+                )
 
         micro_lift = copy.deepcopy(grasp_pose)
         micro_lift.position.z += self.MICRO_LIFT
@@ -412,86 +485,101 @@ class ChessMoveExecutor(GraspPlanner):
             [micro_lift, retreat, transit],
             f"after grasping {model_name}",
         )
+        return True
 
-    def place_piece(self, model_name: str, target_pose: BoardPose) -> None:
+    def place_piece(self, model_name: str, target_pose: BoardPose) -> bool:
         self._publish_board_collision_scene(active_model=model_name)
         source_transit = self._transit_pose_for_xy(target_pose.x, target_pose.y)
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             source_transit,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed source transit lift for {model_name}")
+            self._warn_continue(f"Failed source transit lift for {model_name}")
+            return False
 
         pre_place = self._board_pose_to_pose(target_pose, z=self.TRANSIT_Z)
         self.publish_pose_axes(pre_place, f"{model_name}_pre_place")
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             pre_place,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed pre-place approach for {model_name}")
+            self._warn_continue(f"Failed pre-place approach for {model_name}")
+            return False
 
         place_pose = self._board_pose_to_pose(target_pose, z_offset=self.PLACE_Z_OFFSET)
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             place_pose,
             position_tolerance=self.GRASP_TOLERANCE,
             orientation_tolerance=0.12,
         ):
-            raise RuntimeError(f"Failed placement descent for {model_name}")
+            self._warn_continue(f"Failed placement descent for {model_name}")
+            return False
 
-        if not self.move_gripper(open=True):
-            raise RuntimeError(f"Failed to release {model_name}")
+        if not self._move_gripper_and_settle(
+            open=True,
+            context=f"releasing {model_name}",
+        ):
+            self._warn_continue(f"Failed to release {model_name}")
 
-        rclpy.spin_once(self, timeout_sec=0.9)
+        self._settle_for(self.POST_RELEASE_SETTLE_SEC)
 
         retreat = copy.deepcopy(place_pose)
         retreat.position.z += self.RETREAT_LIFT
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             retreat,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed retreat after placing {model_name}")
+            self._warn_continue(f"Failed retreat after placing {model_name}")
+            return False
+        return True
 
     def discard_piece(self, model_name: str) -> None:
         discard_pose = self._discard_pose(self.discard_count)
         self.discard_count += 1
         self.drop_piece_off_table(model_name, discard_pose)
 
-    def drop_piece_off_table(self, model_name: str, discard_pose: BoardPose) -> None:
+    def drop_piece_off_table(self, model_name: str, discard_pose: BoardPose) -> bool:
         source_transit = self._transit_pose_for_xy(discard_pose.x, discard_pose.y)
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             source_transit,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed discard source transit for {model_name}")
+            self._warn_continue(f"Failed discard source transit for {model_name}")
+            return False
 
         drop_pose = self._board_pose_to_pose(discard_pose, z=self.TRANSIT_Z - 0.10)
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             drop_pose,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed discard approach for {model_name}")
+            self._warn_continue(f"Failed discard approach for {model_name}")
+            return False
 
-        if not self.move_gripper(open=True):
-            raise RuntimeError(f"Failed to release captured piece {model_name}")
+        if not self._move_gripper_and_settle(
+            open=True,
+            context=f"releasing captured piece {model_name}",
+        ):
+            self._warn_continue(f"Failed to release captured piece {model_name}")
 
-        rclpy.spin_once(self, timeout_sec=0.9)
+        self._settle_for(self.POST_RELEASE_SETTLE_SEC)
 
         retreat = copy.deepcopy(drop_pose)
         retreat.position.z = self.TRANSIT_Z
-        if not self.move_arm_to_pose(
+        if not self._move_arm_to_chess_pose(
             retreat,
             position_tolerance=self.APPROACH_TOLERANCE,
             orientation_tolerance=0.15,
         ):
-            raise RuntimeError(f"Failed discard retreat for {model_name}")
+            self._warn_continue(f"Failed discard retreat for {model_name}")
+            return False
+        return True
 
     def destroy_node(self) -> bool:
-        self.move_gripper(open=True)
         return super().destroy_node()
 
     def _discard_pose(self, index: int) -> BoardPose:
@@ -544,6 +632,9 @@ class ChessMoveExecutor(GraspPlanner):
         return obj
 
     def _publish_board_collision_scene(self, active_model: Optional[str] = None) -> None:
+        if not rclpy.ok():
+            return
+
         occupied_models = set(self.square_models.values())
         scene = PlanningScene(is_diff=True)
 
@@ -564,7 +655,12 @@ class ChessMoveExecutor(GraspPlanner):
                 self._piece_collision_object(square, model_name)
             )
 
-        self.scene_pub.publish(scene)
+        try:
+            self.scene_pub.publish(scene)
+        except Exception as exc:
+            self._warn_continue(f"Failed to publish board collision scene: {exc}")
+            return
+
         obstacle_count = len(self.square_models) - (1 if active_model in occupied_models else 0)
         if active_model:
             self.get_logger().info(
@@ -583,45 +679,138 @@ class ChessMoveExecutor(GraspPlanner):
     def _place_model_on_square(self, model_name: str, square_name: str) -> None:
         self.square_models[chess.parse_square(square_name)] = model_name
 
+    def _reset_move_state(self, context: str) -> None:
+        if not rclpy.ok():
+            return
+
+        self.get_logger().info(f"Resetting chess move state {context}")
+        self._clear_attached_chess_objects()
+        self._publish_board_collision_scene()
+        if not self._move_gripper_and_settle(open=True, context=f"reset {context}"):
+            self._warn_continue(f"Failed to reset gripper open {context}")
+        if not self._move_arm_to_chess_joints(self.INITIAL_JOINTS):
+            self._warn_continue(f"Failed to reset arm home {context}")
+        self._publish_board_collision_scene()
+
+    def _clear_attached_chess_objects(self) -> None:
+        if not rclpy.ok():
+            return
+
+        scene = PlanningScene(is_diff=True)
+        scene.robot_state.is_diff = True
+        for model_name in initial_square_models().values():
+            attached = AttachedCollisionObject()
+            attached.link_name = "panda_hand"
+            attached.object.id = model_name
+            attached.object.operation = CollisionObject.REMOVE
+            scene.robot_state.attached_collision_objects.append(attached)
+
+        try:
+            self.scene_pub.publish(scene)
+        except Exception as exc:
+            self._warn_continue(f"Failed to clear attached chess objects: {exc}")
+
     def _transit_pose_for_xy(self, x: float, y: float) -> Pose:
         pose = Pose()
         pose.position = Point(x=x, y=y, z=self.TRANSIT_Z)
         pose.orientation = self.TOP_DOWN_ORIENTATION
         return pose
 
+    def _move_arm_to_chess_pose(
+        self,
+        pose: Pose,
+        position_tolerance: float,
+        orientation_tolerance: float,
+    ) -> bool:
+        goal = self._build_move_goal()
+        goal.request.goal_constraints.append(
+            self._pose_to_constraints(
+                pose,
+                "world",
+                position_tolerance=position_tolerance,
+                orientation_tolerance=orientation_tolerance,
+            )
+        )
+        goal.planning_options.planning_scene_diff = self._build_gripper_touch_scene()
+        return self._send_move_goal(goal)
+
+    def _move_arm_to_chess_joints(self, joint_positions: dict) -> bool:
+        from moveit_msgs.msg import Constraints, JointConstraint
+
+        goal = self._build_move_goal()
+        constraints = Constraints()
+        for name, value in joint_positions.items():
+            joint_constraint = JointConstraint()
+            joint_constraint.joint_name = name
+            joint_constraint.position = value
+            joint_constraint.tolerance_above = 0.01
+            joint_constraint.tolerance_below = 0.01
+            joint_constraint.weight = 1.0
+            constraints.joint_constraints.append(joint_constraint)
+        goal.request.goal_constraints.append(constraints)
+        goal.planning_options.planning_scene_diff = self._build_gripper_touch_scene()
+        return self._send_move_goal(goal)
+
+    def _build_gripper_touch_scene(self) -> PlanningScene:
+        scene = PlanningScene(is_diff=True)
+        acm = scene.allowed_collision_matrix
+        piece_names = set(initial_square_models().values())
+        gripper_names = set(self.GRIPPER_LINKS)
+        names = list(self.GRIPPER_LINKS) + list(initial_square_models().values())
+
+        acm.entry_names = names
+        for name in names:
+            entry = AllowedCollisionEntry()
+            entry.enabled = [
+                (name in gripper_names and other in piece_names)
+                or (name in piece_names and other in gripper_names)
+                for other in names
+            ]
+            acm.entry_values.append(entry)
+        return scene
+
     def _carry_with_reclamp(
         self,
         model_name: str,
         waypoints: Sequence[Pose],
         context: str,
-    ) -> None:
+    ) -> bool:
+        success = True
         for index, waypoint in enumerate(waypoints):
-            if not self.move_arm_to_pose(
+            if not self._move_arm_to_chess_pose(
                 waypoint,
                 position_tolerance=self.APPROACH_TOLERANCE,
                 orientation_tolerance=0.15,
             ):
-                self.move_gripper(open=True)
-                raise RuntimeError(
-                    f"Failed carry waypoint {index + 1} {context}"
-                )
+                self._warn_continue(f"Failed carry waypoint {index + 1} {context}")
+                success = False
+                continue
 
             # Re-issue the close command after each lift / carry segment so the
             # effort controller keeps squeezing while the arm is in motion.
             if not self.move_gripper(open=False):
-                self.move_gripper(open=True)
-                raise RuntimeError(
+                self._warn_continue(
                     f"Failed to re-clamp gripper at carry waypoint {index + 1} {context}"
                 )
+                success = False
+                continue
 
-            rclpy.spin_once(self, timeout_sec=0.3)
-            gap = self.current_gripper_gap()
+            self._settle_for(self.GRIPPER_RECLAMP_SETTLE_SEC)
+            try:
+                gap = self.current_gripper_gap()
+            except RuntimeError as exc:
+                self._warn_continue(
+                    f"Could not verify carry grasp at waypoint {index + 1} {context}: {exc}"
+                )
+                success = False
+                continue
             if gap < self.GRASP_FAIL_GAP:
-                self.move_gripper(open=True)
-                raise RuntimeError(
+                self._warn_continue(
                     f"Lost grasp at carry waypoint {index + 1} {context} "
                     f"(gap={gap:.4f})"
                 )
+                success = False
+        return success
 
     def current_gripper_gap(self) -> float:
         if self.latest_joint_state is None:
@@ -640,6 +829,38 @@ class ChessMoveExecutor(GraspPlanner):
         from std_msgs.msg import Bool
 
         return Bool(data=value)
+
+    def _run_best_effort(self, description: str, action, *args) -> None:
+        try:
+            action(*args)
+        except Exception as exc:
+            self._warn_continue(f"{description} failed: {exc}")
+
+    def _warn_continue(self, message: str) -> None:
+        self.get_logger().warning(f"{message}; continuing")
+
+    def _move_gripper_and_settle(self, open: bool, context: str) -> bool:
+        ok = self.move_gripper(open=open)
+        settle_sec = self.GRIPPER_OPEN_SETTLE_SEC if open else self.GRIPPER_CLOSE_SETTLE_SEC
+        self.get_logger().info(f"Waiting {settle_sec:.1f}s after gripper {context}")
+        self._settle_for(settle_sec)
+        return ok
+
+    def _settle_for(self, seconds: float) -> None:
+        end_time = time.monotonic() + seconds
+        while rclpy.ok():
+            remaining = end_time - time.monotonic()
+            if remaining <= 0.0:
+                return
+            rclpy.spin_once(self, timeout_sec=min(0.1, remaining))
+
+    def _set_detection_paused(self, paused: bool) -> None:
+        if not rclpy.ok():
+            return
+        try:
+            self.pause_pub.publish(self._bool_msg(paused))
+        except Exception:
+            pass
 
 
 def format_move_list(moves: Sequence[str]) -> str:

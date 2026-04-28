@@ -39,6 +39,8 @@ class GraspPlanner(Node):
     GRIPPER_JOINTS = ['panda_finger_joint1', 'panda_finger_joint2']
     GRIPPER_OPEN = [0.03, 0.03]
     GRIPPER_CLOSED = [0.018, 0.018]
+    GRIPPER_GOAL_TIMEOUT_SEC = 2.0
+    GRIPPER_RESULT_TIMEOUT_SEC = 4.0
 
     # ---- TODO 1: Top-down orientation ----
     # The panda_hand frame has its z-axis along the fingers.
@@ -345,8 +347,12 @@ class GraspPlanner(Node):
 
     # --------------------------- gripper helpers ------------------------------
 
-    def move_gripper(self, open: bool) -> bool:
+    def move_gripper(self, open: bool, wait_for_result: bool = False) -> bool:
         """Open or close the gripper via the trajectory controller."""
+        action = "open" if open else "close"
+        if not rclpy.ok():
+            return False
+
         goal = FollowJointTrajectory.Goal()
         goal.trajectory = JointTrajectory()
         goal.trajectory.joint_names = self.GRIPPER_JOINTS
@@ -357,17 +363,46 @@ class GraspPlanner(Node):
         goal.trajectory.points.append(pt)
 
         future = self.gripper_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(
+            self, future, timeout_sec=self.GRIPPER_GOAL_TIMEOUT_SEC
+        )
+        if not future.done():
+            self.get_logger().warning(f'Gripper {action} goal timed out')
+            return False
 
         goal_handle = future.result()
+        if goal_handle is None:
+            self.get_logger().warning(f'Gripper {action} goal did not return a handle')
+            return False
         if not goal_handle.accepted:
             self.get_logger().error('Gripper goal rejected')
             return False
 
+        if not wait_for_result:
+            self.get_logger().info(f'Gripper {action} command accepted')
+            return True
+
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        rclpy.spin_until_future_complete(
+            self, result_future, timeout_sec=self.GRIPPER_RESULT_TIMEOUT_SEC
+        )
+        if not result_future.done():
+            self.get_logger().warning(f'Gripper {action} result timed out')
+            self._cancel_gripper_goal(goal_handle, action)
+            return False
+        if result_future.result() is None:
+            self.get_logger().warning(f'Gripper {action} result was empty')
+            return False
         self.get_logger().info(f'Gripper {"opened" if open else "closed"}')
         return True
+
+    def _cancel_gripper_goal(self, goal_handle, action: str) -> None:
+        if not rclpy.ok():
+            return
+        cancel_future = goal_handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=1.0)
+        if not cancel_future.done():
+            self.get_logger().warning(f'Gripper {action} cancel timed out')
 
     # ----------------------- planning-scene helpers ---------------------------
 

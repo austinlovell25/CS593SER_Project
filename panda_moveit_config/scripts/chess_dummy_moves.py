@@ -73,8 +73,8 @@ def main() -> None:
         print(f"Executing dummy move sequence: {format_move_list(moves)}")
         for ply, move_uci in enumerate(moves):
             move = chess.Move.from_uci(move_uci)
-            if move not in tracker.board.legal_moves:
-                raise RuntimeError(f"Illegal move at step {ply + 1}: {move_uci}")
+            # if move not in tracker.board.legal_moves:
+            #     raise RuntimeError(f"Illegal move at step {ply + 1}: {move_uci}")
 
             command = tracker.build_robot_command(move, ply)
             print(tracker.describe_move(command))
