@@ -17,7 +17,12 @@ except ImportError as exc:
 
 import rclpy
 
-from chess_robot_common import ChessCommandTracker, ChessMoveExecutor, format_move_list
+from chess_robot_common import (
+    ChessCommandTracker,
+    ChessMoveExecutor,
+    DualArmChessRobotBridge,
+    format_move_list,
+)
 
 
 SCENARIOS = {
@@ -49,6 +54,11 @@ def parse_args() -> argparse.Namespace:
         default=0.0,
         help="Seconds to wait between moves.",
     )
+    parser.add_argument(
+        "--single-arm",
+        action="store_true",
+        help="Use the original single Panda arm for both white and black moves.",
+    )
     return parser.parse_args()
 
 
@@ -63,7 +73,7 @@ def main() -> None:
     moves = resolve_moves(args)
 
     rclpy.init()
-    executor = ChessMoveExecutor()
+    executor = ChessMoveExecutor() if args.single_arm else DualArmChessRobotBridge()
     tracker = ChessCommandTracker()
 
     try:
@@ -80,6 +90,8 @@ def main() -> None:
             print(tracker.describe_move(command))
             executor.execute_move(command)
             tracker.apply_model_move(move)
+            if hasattr(executor, "sync_board_scene"):
+                executor.sync_board_scene(tracker.square_models)
 
             if args.delay > 0.0:
                 time.sleep(args.delay)

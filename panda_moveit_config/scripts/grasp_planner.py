@@ -50,20 +50,48 @@ class GraspPlanner(Node):
     #   (x,y,z,w) = (ux·sin(θ/2), uy·sin(θ/2), uz·sin(θ/2), cos(θ/2))
     TOP_DOWN_ORIENTATION = None  # TODO: replace with the correct Quaternion
 
-    def __init__(self):
-        super().__init__('grasp_planner')
+    def __init__(
+        self,
+        node_name: str = 'grasp_planner',
+        ros_namespace: str = '',
+        joint_prefix: str = 'panda_',
+    ):
+        super().__init__(node_name)
+        self.ros_namespace = self._normalize_namespace(ros_namespace)
+        self.joint_prefix = joint_prefix
+        self.GRIPPER_JOINTS = [
+            f'{joint_prefix}finger_joint1',
+            f'{joint_prefix}finger_joint2',
+        ]
+        self.GRIPPER_LINKS = [
+            f'{joint_prefix}link8',
+            f'{joint_prefix}hand',
+            f'{joint_prefix}leftfinger',
+            f'{joint_prefix}rightfinger',
+        ]
+        self.HAND_LINK = f'{joint_prefix}hand'
+        self.TCP_LINK = f'{joint_prefix}hand_tcp'
+        self.INITIAL_JOINTS = {
+            f'{joint_prefix}joint1': 0.0,
+            f'{joint_prefix}joint2': -0.2,
+            f'{joint_prefix}joint3': 0.0,
+            f'{joint_prefix}joint4': -1.0,
+            f'{joint_prefix}joint5': 0.0,
+            f'{joint_prefix}joint6': 1.0,
+            f'{joint_prefix}joint7': 0.0,
+        }
 
         # MoveGroup action client  (plans + executes arm motions)
-        self.move_client = ActionClient(self, MoveGroup, '/move_action')
+        self.move_client = ActionClient(self, MoveGroup, self._ns('/move_action'))
 
         # Gripper trajectory action client
         self.gripper_client = ActionClient(
             self, FollowJointTrajectory,
-            '/gripper_trajectory_controller/follow_joint_trajectory'
+            self._ns('/gripper_trajectory_controller/follow_joint_trajectory')
         )
 
         # Planning-scene publisher (attach / detach objects)
-        self.scene_pub = self.create_publisher(PlanningScene, '/planning_scene', 10)
+        self.scene_pub = self.create_publisher(PlanningScene, self._ns('/planning_scene'), 10)
 
         # Listen for detected collision objects from the object detector
         self.detected_objects = {}
@@ -88,15 +116,25 @@ class GraspPlanner(Node):
         # Cache latest joint states so we can check readiness
         self.latest_joint_state = None
         self.joint_state_sub = self.create_subscription(
-            JointState, '/joint_states',
+            JointState, self._ns('/joint_states'),
             lambda msg: setattr(self, 'latest_joint_state', msg), 10
         )
 
-        self.get_logger().info('Waiting for /move_action server...')
+        self.get_logger().info(f'Waiting for {self._ns("/move_action")} server...')
         self.move_client.wait_for_server()
         self.get_logger().info('Waiting for gripper controller...')
         self.gripper_client.wait_for_server()
         self.get_logger().info('Grasp planner ready')
+
+    @staticmethod
+    def _normalize_namespace(namespace: str) -> str:
+        namespace = namespace.strip('/')
+        return f'/{namespace}' if namespace else ''
+
+    def _ns(self, topic: str) -> str:
+        if not self.ros_namespace:
+            return topic
+        return f'{self.ros_namespace}{topic}'
 
     # ------------------------------ callbacks ---------------------------------
 
@@ -247,7 +285,7 @@ class GraspPlanner(Node):
     def _dump_planning_scene(self):
         """Query and log the current planning scene for debugging."""
         from moveit_msgs.srv import GetPlanningScene
-        client = self.create_client(GetPlanningScene, '/get_planning_scene')
+        client = self.create_client(GetPlanningScene, self._ns('/get_planning_scene'))
         if not client.wait_for_service(timeout_sec=2.0):
             self.get_logger().error('GetPlanningScene service not available')
             return
@@ -306,8 +344,7 @@ class GraspPlanner(Node):
             goal.planning_options.planning_scene_diff = self._build_acm_scene(acm_object_id)
         return self._send_move_goal(goal)
 
-    @staticmethod
-    def _pose_to_constraints(pose: Pose, frame_id: str,
+    def _pose_to_constraints(self, pose: Pose, frame_id: str,
                              position_tolerance: float = 0.05,
                              orientation_tolerance: float = 0.2) -> Constraints:
         """Convert a Pose into MoveIt Constraints (position + orientation)."""
@@ -316,7 +353,7 @@ class GraspPlanner(Node):
         # Position constraint: a tiny sphere around the target point
         pc = PositionConstraint()
         pc.header.frame_id = frame_id
-        pc.link_name = 'panda_hand_tcp'
+        pc.link_name = self.TCP_LINK
         pc.target_point_offset = Vector3(x=0.0, y=0.0, z=0.0)
 
         # Bounding region – small sphere
@@ -335,7 +372,7 @@ class GraspPlanner(Node):
         # Orientation constraint
         oc = OrientationConstraint()
         oc.header.frame_id = frame_id
-        oc.link_name = 'panda_hand_tcp'
+        oc.link_name = self.TCP_LINK
         oc.orientation = copy.deepcopy(pose.orientation)
         oc.absolute_x_axis_tolerance = orientation_tolerance
         oc.absolute_y_axis_tolerance = orientation_tolerance
@@ -409,7 +446,7 @@ class GraspPlanner(Node):
     def attach_object(self, object_id: str):
         """Attach object to the gripper in the planning scene."""
         aco = AttachedCollisionObject()
-        aco.link_name = 'panda_hand'
+        aco.link_name = self.HAND_LINK
         aco.object.id = object_id
         aco.object.header.frame_id = 'world'
         aco.object.operation = CollisionObject.ADD
@@ -424,12 +461,12 @@ class GraspPlanner(Node):
         remove.operation = CollisionObject.REMOVE
         scene.world.collision_objects.append(remove)
         self.scene_pub.publish(scene)
-        self.get_logger().info(f'Attached "{object_id}" to panda_hand')
+        self.get_logger().info(f'Attached "{object_id}" to {self.HAND_LINK}')
 
     def detach_object(self, object_id: str):
         """Detach object from the gripper back into the world."""
         aco = AttachedCollisionObject()
-        aco.link_name = 'panda_hand'
+        aco.link_name = self.HAND_LINK
         aco.object.id = object_id
         aco.object.operation = CollisionObject.REMOVE
 
@@ -437,7 +474,7 @@ class GraspPlanner(Node):
         scene.robot_state.attached_collision_objects.append(aco)
         scene.robot_state.is_diff = True
         self.scene_pub.publish(scene)
-        self.get_logger().info(f'Detached "{object_id}" from panda_hand')
+        self.get_logger().info(f'Detached "{object_id}" from {self.HAND_LINK}')
 
     # --------------------- high-level pick / place ----------------------------
 
@@ -535,8 +572,6 @@ class GraspPlanner(Node):
 
         self.get_logger().info(f'Place of "{object_id}" complete')
         return True
-
-    GRIPPER_LINKS = ['panda_link8', 'panda_hand', 'panda_leftfinger', 'panda_rightfinger']
 
     def _build_acm_scene(self, object_id: str) -> PlanningScene:
         """Build a PlanningScene diff that allows object to collide with ALL links."""

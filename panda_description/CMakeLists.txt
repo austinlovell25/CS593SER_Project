@@ -16,7 +16,9 @@ install(
     config
     launch
     panda
+    black_panda
     panda/meshes
+    black_panda/meshes
     rviz
     urdf
     worlds

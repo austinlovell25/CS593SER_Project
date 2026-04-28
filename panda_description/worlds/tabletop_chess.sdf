@@ -160,21 +160,6 @@
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
     <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
-    <plugin filename="gz_ros2_tf2_system" name="gz::sim::systems::TF2"/>
-
-    <!-- Pose publisher for dynamic objects (bridges to ROS 2 via ros_gz_bridge) -->
-    <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
-      <publish_nested_model_pose>true</publish_nested_model_pose>
-      <publish_model_pose>true</publish_model_pose>
-      <publish_link_pose>false</publish_link_pose>
-      <publish_collision_pose>false</publish_collision_pose>
-      <publish_visual_pose>false</publish_visual_pose>
-      <update_frequency>30</update_frequency>
-      <!-- Also publish when poses change (not just during physics) -->
-      <static_publisher>true</static_publisher>
-      <static_update_frequency>30</static_update_frequency>
-      <use_pose_vector_msg>true</use_pose_vector_msg>
-    </plugin>
 
     <!-- Lighting -->
     <light type="directional" name="sun">
@@ -566,4 +551,3 @@
     </model> -->
   </world>
 </sdf>
-

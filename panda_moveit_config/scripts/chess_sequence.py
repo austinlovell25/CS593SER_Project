@@ -23,6 +23,7 @@ except ImportError as exc:
 from chess_robot_common import (
     ChessCommandTracker,
     ChessMoveExecutor,
+    DualArmChessRobotBridge,
     DryRunRobotBridge,
     format_move_list,
 )
@@ -84,6 +85,8 @@ class ChessSequenceRunner:
             print(self.tracker.describe_move(command))
             self.robot_bridge.execute_move(command)
             self.tracker.apply_model_move(move)
+            if hasattr(self.robot_bridge, "sync_board_scene"):
+                self.robot_bridge.sync_board_scene(self.tracker.square_models)
 
             if self.print_board:
                 print(self.tracker.board)
@@ -220,6 +223,11 @@ def parse_args() -> argparse.Namespace:
         help="Do not move the robot; print the planned chess-piece transfers only.",
     )
     parser.add_argument(
+        "--single-arm",
+        action="store_true",
+        help="Use the original single Panda arm for both white and black moves.",
+    )
+    parser.add_argument(
         "--quiet-placeholder",
         action="store_true",
         help="Suppress per-move details when using --dry-run.",
@@ -257,7 +265,7 @@ def main() -> None:
             import rclpy
 
             rclpy.init()
-            robot_bridge = ChessMoveExecutor()
+            robot_bridge = ChessMoveExecutor() if args.single_arm else DualArmChessRobotBridge()
             robot_bridge.wait_until_ready()
             robot_bridge.initialize_board_scene(ChessCommandTracker().square_models)
 
@@ -275,7 +283,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nChess sequence interrupted.", file=sys.stderr)
     finally:
-        if robot_bridge is not None and isinstance(robot_bridge, ChessMoveExecutor):
+        if robot_bridge is not None and hasattr(robot_bridge, "destroy_node"):
             robot_bridge.destroy_node()
             import rclpy
 

@@ -314,13 +314,22 @@ class ChessMoveExecutor(GraspPlanner):
     GRASP_FAIL_GAP = 0.012
     GRASP_SETTLE_SEC = 1.0
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        node_name: str = "grasp_planner",
+        ros_namespace: str = "",
+        joint_prefix: str = "panda_",
+    ) -> None:
+        super().__init__(
+            node_name=node_name,
+            ros_namespace=ros_namespace,
+            joint_prefix=joint_prefix,
+        )
         self.discard_count = 0
         self.square_models: Dict[chess.Square, str] = {}
 
     def wait_until_ready(self) -> None:
-        self.get_logger().info("Waiting for /joint_states ...")
+        self.get_logger().info(f"Waiting for {self._ns('/joint_states')} ...")
         while self.latest_joint_state is None:
             rclpy.spin_once(self, timeout_sec=0.5)
         self.get_logger().info("Joint states ready")
@@ -331,6 +340,10 @@ class ChessMoveExecutor(GraspPlanner):
         self.get_logger().info(
             f"Initialized planning scene with {len(self.square_models)} chess piece obstacles"
         )
+
+    def sync_board_scene(self, square_models: Dict[chess.Square, str]) -> None:
+        self.square_models = dict(square_models)
+        self._publish_board_collision_scene()
 
     def _build_move_goal(self):
         goal = super()._build_move_goal()
@@ -700,7 +713,7 @@ class ChessMoveExecutor(GraspPlanner):
         scene.robot_state.is_diff = True
         for model_name in initial_square_models().values():
             attached = AttachedCollisionObject()
-            attached.link_name = "panda_hand"
+            attached.link_name = self.HAND_LINK
             attached.object.id = model_name
             attached.object.operation = CollisionObject.REMOVE
             scene.robot_state.attached_collision_objects.append(attached)
@@ -861,6 +874,49 @@ class ChessMoveExecutor(GraspPlanner):
             self.pause_pub.publish(self._bool_msg(paused))
         except Exception:
             pass
+
+
+class DualArmChessRobotBridge:
+    """Routes each move to the arm assigned to the moving piece color."""
+
+    def __init__(self) -> None:
+        self.white_executor = ChessMoveExecutor(
+            node_name="white_grasp_planner",
+            ros_namespace="",
+            joint_prefix="panda_",
+        )
+        self.black_executor = ChessMoveExecutor(
+            node_name="black_grasp_planner",
+            ros_namespace="black",
+            joint_prefix="black_panda_",
+        )
+        self.black_executor.TOP_DOWN_ORIENTATION = Quaternion(
+            x=0.0, y=1.0, z=0.0, w=0.0
+        )
+
+    def wait_until_ready(self) -> None:
+        self.white_executor.wait_until_ready()
+        self.black_executor.wait_until_ready()
+
+    def initialize_board_scene(self, square_models: Dict[chess.Square, str]) -> None:
+        self.white_executor.initialize_board_scene(square_models)
+        self.black_executor.initialize_board_scene(square_models)
+
+    def sync_board_scene(self, square_models: Dict[chess.Square, str]) -> None:
+        self.white_executor.sync_board_scene(square_models)
+        self.black_executor.sync_board_scene(square_models)
+
+    def execute_move(self, command: RobotMoveCommand) -> None:
+        executor = (
+            self.white_executor
+            if command.moving_piece.startswith(f"{WHITE} ")
+            else self.black_executor
+        )
+        executor.execute_move(command)
+
+    def destroy_node(self) -> None:
+        self.white_executor.destroy_node()
+        self.black_executor.destroy_node()
 
 
 def format_move_list(moves: Sequence[str]) -> str:
