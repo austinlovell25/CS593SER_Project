@@ -160,21 +160,6 @@
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
     <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
-    <plugin filename="gz_ros2_tf2_system" name="gz::sim::systems::TF2"/>
-
-    <!-- Pose publisher for dynamic objects (bridges to ROS 2 via ros_gz_bridge) -->
-    <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
-      <publish_nested_model_pose>true</publish_nested_model_pose>
-      <publish_model_pose>true</publish_model_pose>
-      <publish_link_pose>false</publish_link_pose>
-      <publish_collision_pose>false</publish_collision_pose>
-      <publish_visual_pose>false</publish_visual_pose>
-      <update_frequency>30</update_frequency>
-      <!-- Also publish when poses change (not just during physics) -->
-      <static_publisher>true</static_publisher>
-      <static_update_frequency>30</static_update_frequency>
-      <use_pose_vector_msg>true</use_pose_vector_msg>
-    </plugin>
 
     <!-- Lighting -->
     <light type="directional" name="sun">
@@ -356,166 +341,455 @@
       <pose>0.6 0.0 0.182 0 0 1.5708</pose>
       <static>true</static>
     </include>
-    <include>
-      <name>piece11</name>
-      <uri>model://chess_piece_white</uri>
+    <!-- Chess piece colors are assigned per world instance. The shared chess_piece_* models are geometry-only. -->
+    <!-- white rook a1 -->
+    <model name="piece11">
       <pose>0.335 -0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece12</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.32 0.04 0.48 1.0</ambient>
+          <diffuse>0.52 0.08 0.78 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white knight b1 -->
+    <model name="piece12">
       <pose>0.335 -0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece13</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.00 0.42 1.0</ambient>
+          <diffuse>0.96 0.04 0.70 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white bishop c1 -->
+    <model name="piece13">
       <pose>0.335 -0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece14</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.74 0.18 0.02 1.0</ambient>
+          <diffuse>1.00 0.30 0.04 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white queen d1 -->
+    <model name="piece14">
       <pose>0.335 -0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece15</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.38 0.02 0.70 1.0</ambient>
+          <diffuse>0.62 0.06 1.00 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white king e1 -->
+    <model name="piece15">
       <pose>0.335 0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece16</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.72 0.00 0.18 1.0</ambient>
+          <diffuse>1.00 0.04 0.28 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white bishop f1 -->
+    <model name="piece16">
       <pose>0.335 0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece17</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.74 0.18 0.02 1.0</ambient>
+          <diffuse>1.00 0.30 0.04 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white knight g1 -->
+    <model name="piece17">
       <pose>0.335 0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece18</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.00 0.42 1.0</ambient>
+          <diffuse>0.96 0.04 0.70 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white rook h1 -->
+    <model name="piece18">
       <pose>0.335 0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece21</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.32 0.04 0.48 1.0</ambient>
+          <diffuse>0.52 0.08 0.78 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn a2 -->
+    <model name="piece21">
       <pose>0.411 -0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece22</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn b2 -->
+    <model name="piece22">
       <pose>0.411 -0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece23</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn c2 -->
+    <model name="piece23">
       <pose>0.411 -0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece24</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn d2 -->
+    <model name="piece24">
       <pose>0.411 -0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece25</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn e2 -->
+    <model name="piece25">
       <pose>0.411 0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece26</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn f2 -->
+    <model name="piece26">
       <pose>0.411 0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece27</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn g2 -->
+    <model name="piece27">
       <pose>0.411 0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece28</name>
-      <uri>model://chess_piece_white</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- white pawn h2 -->
+    <model name="piece28">
       <pose>0.411 0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece71</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.62 0.04 0.06 1.0</ambient>
+          <diffuse>0.94 0.08 0.10 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn a7 -->
+    <model name="piece71">
       <pose>0.791 -0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece72</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn b7 -->
+    <model name="piece72">
       <pose>0.791 -0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece73</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn c7 -->
+    <model name="piece73">
       <pose>0.791 -0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece74</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn d7 -->
+    <model name="piece74">
       <pose>0.791 -0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece75</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn e7 -->
+    <model name="piece75">
       <pose>0.791 0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece76</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn f7 -->
+    <model name="piece76">
       <pose>0.791 0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece77</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn g7 -->
+    <model name="piece77">
       <pose>0.791 0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece78</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black pawn h7 -->
+    <model name="piece78">
       <pose>0.791 0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece81</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.12 0.52 1.0</ambient>
+          <diffuse>0.04 0.22 0.92 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black rook a8 -->
+    <model name="piece81">
       <pose>0.867 -0.266 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece82</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.00 0.34 0.28 1.0</ambient>
+          <diffuse>0.00 0.58 0.46 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black knight b8 -->
+    <model name="piece82">
       <pose>0.867 -0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece83</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.00 0.42 0.62 1.0</ambient>
+          <diffuse>0.00 0.70 0.96 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black bishop c8 -->
+    <model name="piece83">
       <pose>0.867 -0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece84</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.46 0.18 1.0</ambient>
+          <diffuse>0.04 0.76 0.30 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black queen d8 -->
+    <model name="piece84">
       <pose>0.867 -0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece85</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.00 0.06 0.78 1.0</ambient>
+          <diffuse>0.02 0.12 1.00 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black king e8 -->
+    <model name="piece85">
       <pose>0.867 0.038 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece86</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.08 0.52 0.38 1.0</ambient>
+          <diffuse>0.12 0.88 0.62 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black bishop f8 -->
+    <model name="piece86">
       <pose>0.867 0.114 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece87</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.02 0.46 0.18 1.0</ambient>
+          <diffuse>0.04 0.76 0.30 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black knight g8 -->
+    <model name="piece87">
       <pose>0.867 0.190 0.209 0 0 0</pose>
-    </include>
-    <include>
-      <name>piece88</name>
-      <uri>model://chess_piece_black</uri>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.00 0.42 0.62 1.0</ambient>
+          <diffuse>0.00 0.70 0.96 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
+    <!-- black rook h8 -->
+    <model name="piece88">
       <pose>0.867 0.266 0.209 0 0 0</pose>
-    </include>
+      <static>false</static>
+      <link name="piece_link">
+        <inertial><mass>0.02</mass><inertia><ixx>1.0e-5</ixx><ixy>0.0</ixy><ixz>0.0</ixz><iyy>1.0e-5</iyy><iyz>0.0</iyz><izz>1.0e-5</izz></inertia></inertial>
+        <visual name="visual"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><material>
+          <ambient>0.00 0.34 0.28 1.0</ambient>
+          <diffuse>0.00 0.58 0.46 1.0</diffuse>
+          <specular>0.30 0.30 0.30 1.0</specular>
+        </material></visual>
+        <collision name="collision"><geometry><box><size>0.03 0.03 0.05</size></box></geometry><surface><friction><ode><mu>5.0</mu><mu2>5.0</mu2></ode></friction><contact><ode><kp>200000.0</kp><kd>20.0</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact></surface></collision>
+      </link>
+    </model>
 
     <!-- RGBD Camera -->
     <!-- <model name="overhead_camera">
@@ -566,4 +840,3 @@
     </model> -->
   </world>
 </sdf>
-

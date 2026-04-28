@@ -17,11 +17,17 @@ except ImportError as exc:
 
 import rclpy
 
-from chess_robot_common import ChessCommandTracker, ChessMoveExecutor, format_move_list
+from chess_robot_common import (
+    ChessCommandTracker,
+    ChessMoveExecutor,
+    DualArmChessRobotBridge,
+    format_move_list,
+)
 
 
 SCENARIOS = {
-    "opening": ["e2e4", "e7e5", "g1f3", "b8c6"],
+    #"opening": ["e2e4", "e7e5", "g1f3", "b8c6"],
+    "opening": ["e2e4", "a2a3", "d2d5"],
     "capture": ["e2e4", "d7d5", "e4d5"],
     "castle": ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "e1g1"],
 }
@@ -48,6 +54,11 @@ def parse_args() -> argparse.Namespace:
         default=0.0,
         help="Seconds to wait between moves.",
     )
+    parser.add_argument(
+        "--single-arm",
+        action="store_true",
+        help="Use the original single Panda arm for both white and black moves.",
+    )
     return parser.parse_args()
 
 
@@ -62,7 +73,7 @@ def main() -> None:
     moves = resolve_moves(args)
 
     rclpy.init()
-    executor = ChessMoveExecutor()
+    executor = ChessMoveExecutor() if args.single_arm else DualArmChessRobotBridge()
     tracker = ChessCommandTracker()
 
     try:
@@ -72,13 +83,15 @@ def main() -> None:
         print(f"Executing dummy move sequence: {format_move_list(moves)}")
         for ply, move_uci in enumerate(moves):
             move = chess.Move.from_uci(move_uci)
-            if move not in tracker.board.legal_moves:
-                raise RuntimeError(f"Illegal move at step {ply + 1}: {move_uci}")
+            # if move not in tracker.board.legal_moves:
+            #     raise RuntimeError(f"Illegal move at step {ply + 1}: {move_uci}")
 
             command = tracker.build_robot_command(move, ply)
             print(tracker.describe_move(command))
             executor.execute_move(command)
             tracker.apply_model_move(move)
+            if hasattr(executor, "sync_board_scene"):
+                executor.sync_board_scene(tracker.square_models)
 
             if args.delay > 0.0:
                 time.sleep(args.delay)

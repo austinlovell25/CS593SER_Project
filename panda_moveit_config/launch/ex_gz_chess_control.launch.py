@@ -20,6 +20,7 @@ def generate_launch_description() -> LaunchDescription:
     # Get substitution for all arguments
     world = LaunchConfiguration("world")
     model = LaunchConfiguration("model")
+    black_model = LaunchConfiguration("black_model")
     rviz_config = LaunchConfiguration("rviz_config")
     use_sim_time = LaunchConfiguration("use_sim_time")
     gz_verbosity = LaunchConfiguration("gz_verbosity")
@@ -52,10 +53,42 @@ def generate_launch_description() -> LaunchDescription:
                 )
             ),
             launch_arguments=[
+                ("name", "panda"),
+                ("namespace", ""),
+                ("prefix", "panda_"),
+                ("origin_xyz", "0 0 0"),
+                ("origin_rpy", "0 0 0"),
                 ("ros2_control_plugin", "gz"),
                 ("ros2_control_command_interface", "effort"),
                 # TODO: Re-enable collision geometry for manipulator arm once spawning with specific joint configuration is enabled
                 ("collision_arm", "false"),
+                ("rviz_config", rviz_config),
+                ("use_sim_time", use_sim_time),
+                ("log_level", log_level),
+            ],
+        ),
+        # Launch the namespaced MoveIt 2 stack for the black-side arm.
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("panda_moveit_config"),
+                        "launch",
+                        "move_group_black.launch.py",
+                    ]
+                )
+            ),
+            launch_arguments=[
+                ("name", "black_panda"),
+                ("namespace", "black"),
+                ("prefix", "black_panda_"),
+                ("origin_xyz", "1.2 0 0"),
+                ("origin_rpy", "0 0 3.141592653589793"),
+                ("ros2_control_plugin", "gz"),
+                ("ros2_control_command_interface", "effort"),
+                # TODO: Re-enable collision geometry for manipulator arm once spawning with specific joint configuration is enabled
+                ("collision_arm", "false"),
+                ("enable_rviz", "false"),
                 ("rviz_config", rviz_config),
                 ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
@@ -71,6 +104,30 @@ def generate_launch_description() -> LaunchDescription:
             executable="create",
             output="log",
             arguments=["-file", model, "--ros-args", "--log-level", log_level],
+            parameters=[{"use_sim_time": use_sim_time}],
+        ),
+        # Spawn the black-side arm on the opposite side of the board, rotated back toward it.
+        Node(
+            package="ros_gz_sim",
+            executable="create",
+            output="log",
+            arguments=[
+                "-file",
+                black_model,
+                "-name",
+                "black_panda",
+                "-x",
+                "1.2",
+                "-y",
+                "0.0",
+                "-z",
+                "0.0",
+                "-Y",
+                "3.141592653589793",
+                "--ros-args",
+                "--log-level",
+                log_level,
+            ],
             parameters=[{"use_sim_time": use_sim_time}],
         ),
     ]
@@ -100,6 +157,11 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             default_value="panda",
             description="Name or filepath of model to load.",
         ),
+        DeclareLaunchArgument(
+            "black_model",
+            default_value="black_panda",
+            description="Name or filepath of the black-side robot model to load.",
+        ),
         # Miscellaneous
         DeclareLaunchArgument(
             "rviz_config",
@@ -126,5 +188,4 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             description="The level of logging that is applied to all ROS 2 nodes launched by this script.",
         ),
     ]
-
 

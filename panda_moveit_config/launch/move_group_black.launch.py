@@ -144,7 +144,7 @@ def generate_launch_description():
     # Joint limits
     joint_limits = {
         "robot_description_planning": load_yaml(
-            moveit_config_package, path.join("config", "joint_limits.yaml")
+            moveit_config_package, path.join("config", "joint_limits_black.yaml")
         )
     }
 
@@ -197,7 +197,7 @@ def generate_launch_description():
 
     # MoveIt controller manager
     moveit_controller_manager_yaml = load_yaml(
-        moveit_config_package, path.join("config", "moveit_controller_manager.yaml")
+        moveit_config_package, path.join("config", "moveit_controller_manager_black.yaml")
     )
     moveit_controller_manager = {
         "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
@@ -216,7 +216,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "__controller_parameters_basename",
-            default_value=["controllers_", ros2_control_command_interface, ".yaml"],
+            default_value="controllers_effort_black.yaml",
         )
     )
     controller_parameters = PathJoinSubstitution(
@@ -236,6 +236,10 @@ def generate_launch_description():
             namespace=namespace,
             output="log",
             arguments=["--ros-args", "--log-level", log_level],
+            remappings=[
+                ("robot_description", "/black/robot_description"),
+                ("/robot_description", "/black/robot_description"),
+            ],
             parameters=[
                 robot_description,
                 {
@@ -346,7 +350,16 @@ def generate_launch_description():
                 executable="spawner",
                 namespace=namespace,
                 output="log",
-                arguments=[controller, "--ros-args", "--log-level", log_level],
+                arguments=[
+                    controller,
+                    "-c",
+                    "/black/controller_manager",
+                    "--param-file",
+                    controller_parameters,
+                    "--ros-args",
+                    "--log-level",
+                    log_level,
+                ],
                 parameters=[{"use_sim_time": use_sim_time}],
             ),
         )
@@ -396,27 +409,27 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         # Naming of the robot
         DeclareLaunchArgument(
             "name",
-            default_value="panda",
+            default_value="black_panda",
             description="Name of the robot.",
         ),
         DeclareLaunchArgument(
             "namespace",
-            default_value="",
+            default_value="black",
             description="ROS namespace for this MoveIt/controller stack.",
         ),
         DeclareLaunchArgument(
             "prefix",
-            default_value="panda_",
+            default_value="black_panda_",
             description="Prefix for all robot entities. If modified, then joint names in the configuration of controllers must also be updated.",
         ),
         DeclareLaunchArgument(
             "origin_xyz",
-            default_value="0 0 0",
+            default_value="1.2 0 0",
             description="World-frame xyz origin of the robot base.",
         ),
         DeclareLaunchArgument(
             "origin_rpy",
-            default_value="0 0 0",
+            default_value="0 0 3.141592653589793",
             description="World-frame rpy origin of the robot base.",
         ),
         # Gripper
@@ -487,7 +500,7 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         ),
         # Miscellaneous
         DeclareLaunchArgument(
-            "enable_rviz", default_value="true", description="Flag to enable RViz2."
+            "enable_rviz", default_value="false", description="Flag to enable RViz2."
         ),
         DeclareLaunchArgument(
             "rviz_config",
