@@ -20,11 +20,6 @@
             <size>0.03 0.03 0.05</size>
           </box>
         </geometry>
-        <material>
-          <ambient>0.92 0.92 0.92 1.0</ambient>
-          <diffuse>0.95 0.95 0.95 1.0</diffuse>
-          <specular>0.3 0.3 0.3 1.0</specular>
-        </material>
       </visual>
       <collision name="collision">
         <geometry>
