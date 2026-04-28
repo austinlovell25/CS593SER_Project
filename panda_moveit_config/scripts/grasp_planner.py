@@ -37,7 +37,7 @@ class GraspPlanner(Node):
 
     # Gripper joint names for Panda
     GRIPPER_JOINTS = ['panda_finger_joint1', 'panda_finger_joint2']
-    GRIPPER_OPEN = [0.04, 0.04]
+    GRIPPER_OPEN = [0.03, 0.03]
     GRIPPER_CLOSED = [0.018, 0.018]
 
     # ---- TODO 1: Top-down orientation ----

@@ -11,6 +11,7 @@ import chess
 import rclpy
 from geometry_msgs.msg import Point, Pose, Quaternion
 from moveit_msgs.msg import CollisionObject, PlanningScene
+from shape_msgs.msg import SolidPrimitive
 
 from grasp_planner import GraspPlanner
 
@@ -287,6 +288,8 @@ class ChessMoveExecutor(GraspPlanner):
     """Physics-driven chess piece executor."""
 
     TOP_DOWN_ORIENTATION = Quaternion(x=1.0, y=0.0, z=0.0, w=0.0)
+    PIECE_BASE_DIMS = (0.03, 0.03, 0.05)
+    PIECE_COLLISION_DIMS = (0.035, 0.035, 0.06)
     GRIPPER_CLOSED = [0.0040, 0.0040]
     PRE_GRASP_LIFT = 0.12
     TRANSIT_Z = 0.42
@@ -302,6 +305,7 @@ class ChessMoveExecutor(GraspPlanner):
     def __init__(self) -> None:
         super().__init__()
         self.discard_count = 0
+        self.square_models: Dict[chess.Square, str] = {}
 
     def wait_until_ready(self) -> None:
         self.get_logger().info("Waiting for /joint_states ...")
@@ -310,15 +314,11 @@ class ChessMoveExecutor(GraspPlanner):
         self.get_logger().info("Joint states ready")
 
     def initialize_board_scene(self, square_models: Dict[chess.Square, str]) -> None:
-        scene = PlanningScene(is_diff=True)
-        for model_name in initial_square_models().values():
-            remove = CollisionObject()
-            remove.header.frame_id = "world"
-            remove.id = model_name
-            remove.operation = CollisionObject.REMOVE
-            scene.world.collision_objects.append(remove)
-        self.scene_pub.publish(scene)
-        self.get_logger().info("Cleared chess pieces from the planning scene")
+        self.square_models = dict(square_models)
+        self._publish_board_collision_scene()
+        self.get_logger().info(
+            f"Initialized planning scene with {len(self.square_models)} chess piece obstacles"
+        )
 
     def execute_move(self, command: RobotMoveCommand) -> None:
         if command.promotion:
@@ -338,14 +338,19 @@ class ChessMoveExecutor(GraspPlanner):
                     f'{command.capture_square}'
                 )
                 self.pick_piece(command.captured_model, command.capture_pose)
+                self._remove_model_from_board(command.captured_model)
                 self.discard_piece(command.captured_model)
+                self._publish_board_collision_scene()
 
             self.get_logger().info(
                 f'Moving "{command.moving_model}" from '
                 f'{command.transfer.from_square} to {command.transfer.to_square}'
             )
             self.pick_piece(command.moving_model, command.transfer.from_pose)
+            self._remove_model_from_board(command.moving_model)
             self.place_piece(command.moving_model, command.transfer.to_pose)
+            self._place_model_on_square(command.moving_model, command.transfer.to_square)
+            self._publish_board_collision_scene()
 
             for transfer in command.supporting_transfers:
                 self.get_logger().info(
@@ -353,7 +358,10 @@ class ChessMoveExecutor(GraspPlanner):
                     f'for {transfer.reason}'
                 )
                 self.pick_piece(transfer.model_name, transfer.from_pose)
+                self._remove_model_from_board(transfer.model_name)
                 self.place_piece(transfer.model_name, transfer.to_pose)
+                self._place_model_on_square(transfer.model_name, transfer.to_square)
+                self._publish_board_collision_scene()
 
             if not self.move_arm_to_joints(self.INITIAL_JOINTS):
                 raise RuntimeError("Failed to return to the initial joint configuration")
@@ -362,6 +370,7 @@ class ChessMoveExecutor(GraspPlanner):
             self.pause_pub.publish(self._bool_msg(False))
 
     def pick_piece(self, model_name: str, source_pose: BoardPose) -> None:
+        self._publish_board_collision_scene(active_model=model_name)
         if not self.move_gripper(open=True):
             raise RuntimeError(f"Failed to open gripper for {model_name}")
 
@@ -405,6 +414,7 @@ class ChessMoveExecutor(GraspPlanner):
         )
 
     def place_piece(self, model_name: str, target_pose: BoardPose) -> None:
+        self._publish_board_collision_scene(active_model=model_name)
         source_transit = self._transit_pose_for_xy(target_pose.x, target_pose.y)
         if not self.move_arm_to_pose(
             source_transit,
@@ -505,6 +515,73 @@ class ChessMoveExecutor(GraspPlanner):
         )
         pose.orientation = self.TOP_DOWN_ORIENTATION
         return pose
+
+    def _piece_collision_object(self, square: chess.Square, model_name: str) -> CollisionObject:
+        board_pose = square_pose(square)
+        collision_height = self.PIECE_COLLISION_DIMS[2]
+        base_height = self.PIECE_BASE_DIMS[2]
+
+        obj = CollisionObject()
+        obj.header.frame_id = "world"
+        obj.header.stamp = self.get_clock().now().to_msg()
+        obj.id = model_name
+        obj.operation = CollisionObject.ADD
+        obj.primitives.append(
+            SolidPrimitive(
+                type=SolidPrimitive.BOX,
+                dimensions=list(self.PIECE_COLLISION_DIMS),
+            )
+        )
+
+        pose = Pose()
+        pose.position = Point(
+            x=board_pose.x,
+            y=board_pose.y,
+            z=board_pose.z + max(0.0, collision_height - base_height) / 2.0,
+        )
+        pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+        obj.primitive_poses.append(pose)
+        return obj
+
+    def _publish_board_collision_scene(self, active_model: Optional[str] = None) -> None:
+        occupied_models = set(self.square_models.values())
+        scene = PlanningScene(is_diff=True)
+
+        for model_name in initial_square_models().values():
+            if model_name in occupied_models and model_name != active_model:
+                continue
+            remove = CollisionObject()
+            remove.header.frame_id = "world"
+            remove.header.stamp = self.get_clock().now().to_msg()
+            remove.id = model_name
+            remove.operation = CollisionObject.REMOVE
+            scene.world.collision_objects.append(remove)
+
+        for square, model_name in self.square_models.items():
+            if model_name == active_model:
+                continue
+            scene.world.collision_objects.append(
+                self._piece_collision_object(square, model_name)
+            )
+
+        self.scene_pub.publish(scene)
+        obstacle_count = len(self.square_models) - (1 if active_model in occupied_models else 0)
+        if active_model:
+            self.get_logger().info(
+                f'Published {obstacle_count} chess piece obstacles; excluding "{active_model}"'
+            )
+
+    def _remove_model_from_board(self, model_name: str) -> None:
+        for square, square_model in list(self.square_models.items()):
+            if square_model == model_name:
+                self.square_models.pop(square)
+                return
+        self.get_logger().warning(
+            f'Could not remove "{model_name}" from board occupancy; model was not tracked'
+        )
+
+    def _place_model_on_square(self, model_name: str, square_name: str) -> None:
+        self.square_models[chess.parse_square(square_name)] = model_name
 
     def _transit_pose_for_xy(self, x: float, y: float) -> Pose:
         pose = Pose()

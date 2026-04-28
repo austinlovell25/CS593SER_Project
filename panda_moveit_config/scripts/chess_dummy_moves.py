@@ -21,7 +21,8 @@ from chess_robot_common import ChessCommandTracker, ChessMoveExecutor, format_mo
 
 
 SCENARIOS = {
-    "opening": ["e2e4", "e7e5", "g1f3", "b8c6"],
+    #"opening": ["e2e4", "e7e5", "g1f3", "b8c6"],
+    "opening": ["e2e4", "a2a3", "d2d5"],
     "capture": ["e2e4", "d7d5", "e4d5"],
     "castle": ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "e1g1"],
 }
