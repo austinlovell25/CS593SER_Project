@@ -79,9 +79,10 @@ def piece_name(piece: chess.Piece) -> str:
 
 def square_pose(square: chess.Square) -> BoardPose:
     spacing = 0.076
+    mirrored_file = 7 - chess.square_file(square)
     return BoardPose(
         x=0.335 + spacing * chess.square_rank(square),
-        y=-0.266 + spacing * chess.square_file(square),
+        y=-0.266 + spacing * mirrored_file,
         z=0.209,
     )
 
@@ -109,7 +110,8 @@ def initial_square_models() -> Dict[chess.Square, str]:
     for rank in (1, 2, 7, 8):
         for file_index in range(8):
             square = chess.square(file_index, rank - 1)
-            models[square] = f"piece{rank}{file_index + 1}"
+            mirrored_file = 7 - file_index
+            models[square] = f"piece{rank}{mirrored_file + 1}"
     return models
 
 
