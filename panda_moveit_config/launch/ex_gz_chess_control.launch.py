@@ -130,6 +130,18 @@ def generate_launch_description() -> LaunchDescription:
             ],
             parameters=[{"use_sim_time": use_sim_time}],
         ),
+        Node(
+            package="ros_gz_bridge",
+            executable="parameter_bridge",
+            output="log",
+            arguments=[
+                "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+                "--ros-args",
+                "--log-level",
+                log_level,
+            ],
+            parameters=[{"use_sim_time": use_sim_time}],
+        ),
     ]
 
     ld = LaunchDescription(declared_arguments + launch_descriptions + nodes)
@@ -188,4 +200,3 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             description="The level of logging that is applied to all ROS 2 nodes launched by this script.",
         ),
     ]
-
